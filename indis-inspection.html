@@ -98,7 +98,7 @@ textarea{width:100%;min-height:110px;font-size:15px}
 
  <div class="vinbox">
   <label><b>SCAN VIN</b> (point scanner and pull trigger)</label>
-  <input id="vin" name="vin" maxlength="17" inputmode="text" autocapitalize="characters" placeholder="17-character VIN">
+  <input id="vin" name="vin" maxlength="500" inputmode="text" autocapitalize="characters" placeholder="17-character VIN">
   <div id="vinstatus"></div>
   <details class="noprint"><summary style="font-size:12px">Show raw NHTSA engine data</summary><pre id="raw" style="font-size:12px;white-space:pre-wrap;margin:4px 0"></pre></details>
  </div>
@@ -319,11 +319,41 @@ $('#bSet').onclick=()=>{
 // ---- VIN scan + decode
 const vinEl=$('#vin'), st=$('#vinstatus');
 let lastVin='';
+// ---- robust VIN extraction: barcodes may add prefixes/suffixes (Toyota "I", "*" start/stop, spaces, extra data).
+// Real VINs are 17 chars, never contain I, O or Q, and (North America) have a valid check digit in position 9.
+const VT={A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,J:1,K:2,L:3,M:4,N:5,P:7,R:9,S:2,T:3,U:4,V:5,W:6,X:7,Y:8,Z:9};
+function checkDigitOK(v){
+  const w=[8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2]; let sum=0;
+  for(let i=0;i<17;i++){const c=v[i]; const n=/\d/.test(c)?+c:VT[c]; if(n===undefined) return false; sum+=n*w[i];}
+  const r=sum%11, exp=r===10?'X':String(r); return v[8]===exp;
+}
+function extractVin(raw){
+  const v=raw.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const cands=[];
+  for(let i=0;i+17<=v.length;i++){const w=v.slice(i,i+17); if(!/[IOQ]/.test(w)) cands.push(w);}
+  const good=cands.find(checkDigitOK);
+  if(good) return {vin:good,ok:true};
+  if(cands.length) return {vin:cands[0],ok:false};   // no check-digit match (e.g. non-US VIN): best guess, flagged
+  return {vin:'',ok:false};
+}
+let scanTimer=null;
+function processScan(){
+  clearTimeout(scanTimer);
+  const raw=vinEl.value; if(!raw.trim()) return;
+  const r=extractVin(raw);
+  if(r.vin){
+    vinEl.value=r.vin;
+    if(r.vin!==lastVin) lookup(r.vin);
+    if(!r.ok) st.textContent+=' | WARNING: VIN check digit does not match - verify the VIN.';
+  } else if(raw.replace(/[^A-Za-z0-9]/g,'').length>=17) st.textContent='No valid 17-character VIN found in scan. Rescan or type it.';
+  else st.textContent='VIN must be 17 characters.';
+}
+// a scan arrives as fast keystrokes: wait for a short pause (or Enter), then clean it up
 vinEl.addEventListener('input',()=>{
-  vinEl.value=vinEl.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(vinEl.value.length===17 && vinEl.value!==lastVin) lookup(vinEl.value);
+  clearTimeout(scanTimer);
+  if(vinEl.value.replace(/[^A-Za-z0-9]/g,'').length>=17) scanTimer=setTimeout(processScan,250);
 });
-vinEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault(); if(vinEl.value.length===17) lookup(vinEl.value); else st.textContent='VIN must be 17 characters.';} });
+vinEl.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key==='Tab'&&vinEl.value.length>=17){ if(e.key==='Enter')e.preventDefault(); processScan(); } });
 
 async function lookup(vin){
   lastVin=vin; st.textContent='Decoding VIN...';
