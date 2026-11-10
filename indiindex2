@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indi's Automotive - Inspection Form</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#e9eff8;color:#111;font-size:15px}
+.bar{position:sticky;top:0;z-index:5;background:#0b3d91;color:#fff;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bar button{padding:10px 12px;border:0;border-radius:6px;font-size:15px;background:#fff;color:#0b3d91;font-weight:bold}
+.bar .grow{flex:1}
+#total{font-weight:bold}
+.page{max-width:1000px;margin:10px auto;background:#fff;padding:12px;border:1px solid #bbb}
+header{text-align:center;color:#0b3d91}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hd .sp,.hd .ase{width:92px;flex:none}
+.hd .ase{height:auto;display:block}
+.hd .hdt{flex:1}
+header h1{margin:0;font-size:26px}
+header div{font-weight:bold;font-size:13px}
+.vinbox{background:#e3eefc;border:2px solid #0b3d91;padding:8px;margin:8px 0}
+.vinbox input{font-size:20px;letter-spacing:1px;width:100%;padding:8px;text-transform:uppercase}
+#vinstatus{font-size:13px;margin-top:4px;min-height:16px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.grid>div{min-width:0}
+@media(max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}.hd .sp{display:none}.hd .ase{width:64px}}
+fieldset{border:1px solid #0b3d91;margin:0 0 10px;padding:6px 8px}
+legend{font-weight:bold;font-size:13px;padding:0 4px;background:#fff;color:#0b3d91}
+.f{display:flex;flex-direction:column;margin:4px 0;font-size:11px;font-weight:bold}
+.f{min-width:0}
+.f input,.f select{font-size:15px;padding:6px;border:1px solid #8aa4cf;border-radius:3px;width:100%;min-width:0}
+.f2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+.f3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:6px}
+.inl{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:4px 0}
+.inl label{white-space:nowrap}
+.row{display:grid;grid-template-columns:1fr auto auto auto 70px;gap:6px;align-items:center;padding:3px 0;border-bottom:1px dotted #9db6dc;font-size:13px}
+.row.head{font-weight:bold;font-size:11px}
+.row label{display:flex;align-items:center;gap:2px;font-size:11px}
+.row input[type=radio]{width:22px;height:22px;margin:0}
+.cost{width:70px;padding:4px;font-size:14px;text-align:right}
+.mini{width:70px;padding:3px}
+textarea{width:100%;min-height:110px;font-size:15px}
+.est{background:#d6e6fa;border:1px solid #0b3d91;border-radius:12px;padding:10px;font-size:12px;margin-top:10px}
+#sig{border-bottom:1px solid #000;background:#fff;touch-action:none;width:100%;height:90px;display:block}
+.list{display:none;max-width:1000px;margin:10px auto;background:#fff;padding:10px;border:1px solid #bbb}
+.list.show{display:block}
+.rec{display:flex;gap:6px;align-items:center;border-bottom:1px solid #ddd;padding:6px 0;font-size:13px}
+.rec .grow{flex:1}
+.rec button{padding:8px 10px}
+.totalline{text-align:right;font-weight:bold;font-size:16px;margin:6px 0}
+@media print{
+ body{background:#fff;font-size:11px}
+ .bar,.list,.vinbox,.noprint{display:none!important}
+ .page{border:0;margin:0;padding:0;max-width:none}
+ input,textarea,select{border:0!important;border-bottom:1px solid #666!important;background:transparent!important;font-size:11px!important;padding:1px!important}
+ input[type=radio]{width:11px;height:11px}
+ .row{padding:1px 0}
+ fieldset{break-inside:avoid;padding:3px 5px;margin-bottom:5px}
+ textarea{min-height:60px}
+ .grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ @page{margin:8mm}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+ <button id="bNew">New</button>
+ <button id="bSave">Save</button>
+ <button id="bPrint">Print</button>
+ <button id="bList">Saved</button>
+ <span class="grow"></span>
+ <span id="total">Total: $0.00</span>
+</div>
+
+<div class="list" id="list">
+ <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+  <input id="q" placeholder="Search name / VIN / plate" style="flex:1;padding:8px;font-size:15px">
+  <button id="bExport">Export backup</button>
+  <button id="bImport">Import backup</button>
+  <button id="bSet">Settings</button>
+  <input type="file" id="file" accept=".json" hidden>
+ </div>
+ <div id="recs"></div>
+</div>
+
+<form class="page" id="form" autocomplete="off" onsubmit="return false">
+ <header>
+  <div class="hd"><div class="sp"></div>
+   <div class="hdt">
+    <h1>INDI'S AUTOMOTIVE</h1>
+    <div>24620 AURORA RD, BEDFORD HTS, OH 44146</div>
+    <div>PH: 440-735-3474</div>
+   </div>
+   <img class="ase" alt="ASE Certified" src="data:image/jpeg;base64,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">
+  </div>
+ </header>
+
+ <div class="vinbox">
+  <label><b>SCAN VIN</b> (point scanner and pull trigger)</label>
+  <input id="vin" name="vin" maxlength="500" inputmode="text" autocapitalize="characters" placeholder="17-character VIN">
+  <div id="vinstatus"></div>
+  <details class="noprint"><summary style="font-size:12px">Show raw NHTSA engine data</summary><pre id="raw" style="font-size:12px;white-space:pre-wrap;margin:4px 0"></pre></details>
+ </div>
+
+ <div class="grid">
+ <div>
+  <fieldset><legend>CUSTOMER / REGISTERED OWNER (editable)</legend>
+   <label class="f">NAME<input name="name"></label>
+   <label class="f">ADDRESS<input name="address"></label>
+   <div class="f3">
+    <label class="f">CITY<input name="city" list="cities" autocapitalize="words"></label><datalist id="cities"></datalist>
+    <label class="f">STATE<select name="state"></select></label>
+    <label class="f">ZIP<input name="zip" inputmode="numeric" maxlength="5"></label>
+   </div>
+   <div class="f2">
+    <label class="f">HOME TEL. #<input name="homeTel" inputmode="tel"></label>
+    <label class="f">WORK TEL. #<input name="workTel" inputmode="tel"></label>
+   </div>
+  </fieldset>
+
+  <fieldset><legend>PAYMENT METHOD</legend>
+   <div class="inl" id="pay"></div>
+   <label class="f">OTHER<input name="payOther"></label>
+  </fieldset>
+
+  <fieldset><legend>TUNE UP AND EXHAUST ANALYSIS</legend>
+   <div class="f2" style="font-weight:bold;font-size:11px"><span>BEFORE</span><span>AFTER</span></div>
+   <div class="f2"><label class="f">HC - PPM<input name="hcB"></label><label class="f"><span>&nbsp;</span><input name="hcA"></label></div>
+   <div class="f2"><label class="f">CO %<input name="coB"></label><label class="f"><span>&nbsp;</span><input name="coA"></label></div>
+   <div class="f2"><label class="f">O2 %<input name="o2B"></label><label class="f"><span>&nbsp;</span><input name="o2A"></label></div>
+   <div class="f2"><label class="f">CO2 %<input name="co2B"></label><label class="f"><span>&nbsp;</span><input name="co2A"></label></div>
+  </fieldset>
+ </div>
+
+ <div>
+  <fieldset><legend>VEHICLE</legend>
+   <div class="f2">
+    <label class="f">TODAY'S DATE<input type="date" name="date"></label>
+    <label class="f">TIME IN<input type="time" name="timeIn"></label>
+   </div>
+   <div class="f3">
+    <label class="f">YEAR<input name="year" inputmode="numeric"></label>
+    <label class="f">MAKE<input name="make"></label>
+    <label class="f">MODEL<input name="model"></label>
+   </div>
+   <div class="f3">
+    <label class="f">ENGINE CID<input name="cid"></label>
+    <label class="f">LICENSE<input name="plate"></label>
+    <label class="f">MILEAGE/KM<input name="miles" inputmode="numeric"></label>
+   </div>
+   <div class="f2">
+    <label class="f">ENGINE (decoded / editable)<input name="engineDesc"></label>
+    <label class="f">CYLINDERS<input name="cyl" inputmode="numeric"></label>
+   </div>
+  </fieldset>
+
+  <fieldset><legend>SERVICE INFO</legend>
+   <div class="inl"><b>BRAKE INSPECTION</b>
+    <label><input type="radio" name="brake" value="YES"> YES</label><label><input type="radio" name="brake" value="NO"> NO</label></div>
+   <div class="inl"><b>APPOINTMENT</b>
+    <label><input type="radio" name="appt" value="YES"> YES</label><label><input type="radio" name="appt" value="NO"> NO</label>
+    <label class="f" style="flex:1">TIME<input type="time" name="apptTime"></label></div>
+   <div class="inl">
+    <label><input type="radio" name="wait" value="WAITING"> WAITING</label>
+    <label><input type="radio" name="wait" value="DROP OFF"> DROP OFF</label>
+    <label class="f" style="flex:1">TIME PROMISED<input name="promised"></label></div>
+   <div class="f2">
+    <label class="f">SCHEDULED MAINT. PACKAGE $<input name="pkg" inputmode="decimal" class="cost" style="width:100%"></label>
+    <label class="f">MILES/KM<input name="pkgMiles"></label>
+   </div>
+  </fieldset>
+ </div>
+ </div>
+
+ <div class="grid" id="sections"></div>
+
+ <fieldset style="margin-top:10px"><legend>REQUEST OLD PARTS</legend>
+  <div class="inl"><label><input type="radio" name="old" value="YES"> YES</label><label><input type="radio" name="old" value="NO"> NO</label></div>
+ </fieldset>
+
+ <fieldset><legend>COMMENTS</legend><textarea name="comments"></textarea></fieldset>
+
+ <div class="totalline">TOTAL: <span id="total2">$0.00</span></div>
+
+ <div class="est">
+  "YOU HAVE THE RIGHT TO AN ESTIMATE IF THE EXPECTED COST OF REPAIRS OR SERVICES WILL BE MORE THAN TWENTY-FIVE DOLLARS. INITIAL YOUR CHOICE:"
+  <div class="inl">
+   <label><input type="radio" name="est" value="WRITTEN"> WRITTEN ESTIMATE</label>
+   <label><input type="radio" name="est" value="ORAL"> ORAL ESTIMATE</label>
+   <label><input type="radio" name="est" value="NONE"> NO ESTIMATE</label>
+  </div>
+  <div>X <canvas id="sig"></canvas></div>
+  <button type="button" id="sigClear" class="noprint">Clear signature</button>
+ </div>
+</form>
+
+<script>
+const SECTIONS=[
+ ["ENGINE PERFORMANCE",["Engine replacement","Vacuum lines","Diagnostic engine","Cranking/starting tune-up","Distributor cap","Ignition rotor","Ignition wires","Sensors","Throttle bore clean","Fuel injection service","EGR valve","Carb. rebuild/replace"],
+   '<div class="f2"><label class="f">TIMING<input name="timing"></label><label class="f">IDLE SPEED<input name="idle"></label></div>'],
+ ["LUBRICATION & MAINTENANCE",["Oil change/lube","X-tra oil","Transmission service","Differential service","Transfer case"],
+   '<label class="f">X-TRA OIL (# OF QTS)<input name="xqts" inputmode="numeric"></label>'],
+ ["FILTERS",["Air filter","PCV valve","Breather filter","Purge/canister","Fuel filter"],""],
+ ["GASKETS & SEALS",["Valve cover gasket","Valve adjustment","Other gasket/seal","Intake manifold gasket"],""],
+ ["COOLING, BELTS & HOSES",["Serpentine","Timing","V belts","Cooling system service","Radiator hose (upper)","Radiator hose (lower)","Heater/other hose","Water pump","Radiator cap","Thermostat"],
+   '<div class="f2"><label class="f">V BELTS size<input name="vbSize"></label><label class="f">V BELTS qty (X)<input name="vbQty"></label></div>']
+];
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'_');
+const $=s=>document.querySelector(s), form=$('#form');
+
+// build sections
+let h='';
+for(const [title,items,extra] of SECTIONS){
+  h+=`<fieldset><legend>${title}</legend><div class="row head"><span>DESCRIPTION</span><span>OK/NA</span><span>SUGG</span><span>REQ</span><span>COST</span></div>`;
+  for(const it of items){const k=slug(title)+'_'+slug(it);
+    h+=`<div class="row"><span>${it}</span>
+    <label><input type="radio" name="s_${k}" value="OK"></label>
+    <label><input type="radio" name="s_${k}" value="SUGG"></label>
+    <label><input type="radio" name="s_${k}" value="REQ"></label>
+    <input class="cost" name="c_${k}" inputmode="decimal" placeholder="0.00"></div>`;}
+  h+=extra+'</fieldset>';
+}
+$('#sections').innerHTML=h;
+$('#pay').innerHTML=['CHECK','CASH','VISA','AMEX','MC','DSC','OTHER'].map(p=>`<label><input type="radio" name="pay" value="${p}"> ${p}</label>`).join('');
+
+// radios can be un-selected by tapping again
+let lastChecked=null;
+form.addEventListener('click',e=>{
+  const r=e.target;
+  if(r.type==='radio'){ if(r._was){r.checked=false;r._was=false;} else {form.querySelectorAll(`input[name="${r.name}"]`).forEach(x=>x._was=false);r._was=true;} calc(); }
+});
+
+function calc(){
+  let t=0; form.querySelectorAll('.cost').forEach(i=>{const v=parseFloat((i.value||'').replace(/[^0-9.\-]/g,''));if(!isNaN(v))t+=v;});
+  const s='$'+t.toFixed(2); $('#total').textContent='Total: '+s; $('#total2').textContent=s;
+}
+form.addEventListener('input',calc);
+
+// ---- data in/out
+function getData(){
+  const d={};
+  form.querySelectorAll('input,textarea,select').forEach(el=>{
+    if(!el.name) return;
+    if(el.type==='radio'){ if(el.checked) d[el.name]=el.value; }
+    else d[el.name]=el.value;
+  });
+  d._sig=sigBlank?'':sig.toDataURL();
+  return d;
+}
+function setData(d){
+  form.reset();
+  form.querySelectorAll('input,textarea,select').forEach(el=>{
+    if(!el.name) return;
+    if(el.type==='radio'){ el.checked=(d[el.name]===el.value); el._was=el.checked; }
+    else el.value=d[el.name]||'';
+  });
+  clearSig(); if(d._sig) loadSig(d._sig);
+  calc();
+}
+let curId=null;
+const DB='indis_records_v1';
+const all=()=>{try{return JSON.parse(localStorage.getItem(DB)||'[]')}catch(e){return[]}};
+const put=a=>localStorage.setItem(DB,JSON.stringify(a));
+
+function newForm(){
+  curId=null; setData({});
+  const n=new Date(),p=x=>String(x).padStart(2,'0');
+  form.date.value=`${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}`;
+  form.timeIn.value=`${p(n.getHours())}:${p(n.getMinutes())}`;
+  form.state.value='OH'; updateCities(); $('#vinstatus').textContent=''; $('#vin').focus();
+}
+$('#bNew').onclick=()=>{ if(confirm('Start a new form? Unsaved changes will be lost.')) newForm(); };
+$('#bSave').onclick=()=>{
+  const d=getData(); const a=all();
+  if(d.vin&&d.vin.length===17){ // remember engine corrections for this VIN pattern (chars 1-8 + model-year char)
+    const o=JSON.parse(localStorage.getItem('engOverride')||'{}');
+    o[engKey(d.vin)]={cid:d.cid||'',cyl:d.cyl||'',engineDesc:d.engineDesc||''};
+    localStorage.setItem('engOverride',JSON.stringify(o));
+  }
+  if(!curId) curId='r'+Date.now();
+  const rec={id:curId,savedAt:new Date().toISOString(),data:d};
+  const i=a.findIndex(r=>r.id===curId); if(i>=0)a[i]=rec; else a.unshift(rec);
+  put(a); alert('Saved.'); renderList();
+};
+$('#bPrint').onclick=()=>window.print();
+$('#bList').onclick=()=>{$('#list').classList.toggle('show');renderList();};
+$('#q').oninput=renderList;
+function renderList(){
+  const q=$('#q').value.toLowerCase();
+  const a=all().filter(r=>{const d=r.data;return !q||[d.name,d.vin,d.plate,d.make,d.model].join(' ').toLowerCase().includes(q)});
+  $('#recs').innerHTML=a.length?a.map(r=>{const d=r.data;
+    return `<div class="rec"><div class="grow"><b>${esc(d.name||'(no name)')}</b> - ${esc([d.year,d.make,d.model].join(' '))}<br><small>${esc(d.vin||'')} | ${esc(d.date||'')}</small></div>
+    <button onclick="openRec('${r.id}')">Open</button><button onclick="delRec('${r.id}')">Del</button></div>`}).join(''):'<i>No saved forms.</i>';
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+window.openRec=id=>{const r=all().find(x=>x.id===id);if(!r)return;curId=id;setData(r.data);updateCities();$('#list').classList.remove('show');window.scrollTo(0,0);};
+window.delRec=id=>{if(confirm('Delete this saved form?')){put(all().filter(r=>r.id!==id));renderList();}};
+
+$('#bExport').onclick=()=>{
+  const b=new Blob([JSON.stringify(all(),null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='indis-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+};
+$('#bImport').onclick=()=>$('#file').click();
+$('#file').onchange=async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{const inc=JSON.parse(await f.text()); const a=all(); const ids=new Set(a.map(r=>r.id));
+    inc.forEach(r=>{ if(!ids.has(r.id)) a.push(r); else {const i=a.findIndex(x=>x.id===r.id); if(r.savedAt>a[i].savedAt)a[i]=r;} });
+    a.sort((x,y)=>y.savedAt.localeCompare(x.savedAt)); put(a); renderList(); alert('Imported.');
+  }catch(err){alert('Not a valid backup file.');}
+  e.target.value='';
+};
+$('#bSet').onclick=()=>{
+  const cur=localStorage.getItem('ownerUrl')||'';
+  const u=prompt('Owner-lookup service URL (optional). The app will call URL?vin=XXXX and expect JSON with name,address,city,state,zip,homeTel,workTel. Leave blank to disable.',cur);
+  if(u!==null) localStorage.setItem('ownerUrl',u.trim());
+};
+
+// ---- VIN scan + decode
+const vinEl=$('#vin'), st=$('#vinstatus');
+let lastVin='';
+// ---- robust VIN extraction: barcodes may add prefixes/suffixes (Toyota "I", "*" start/stop, spaces, extra data).
+// Real VINs are 17 chars, never contain I, O or Q, and (North America) have a valid check digit in position 9.
+const VT={A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,J:1,K:2,L:3,M:4,N:5,P:7,R:9,S:2,T:3,U:4,V:5,W:6,X:7,Y:8,Z:9};
+function checkDigitOK(v){
+  const w=[8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2]; let sum=0;
+  for(let i=0;i<17;i++){const c=v[i]; const n=/\d/.test(c)?+c:VT[c]; if(n===undefined) return false; sum+=n*w[i];}
+  const r=sum%11, exp=r===10?'X':String(r); return v[8]===exp;
+}
+function extractVin(raw){
+  const v=raw.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const cands=[];
+  for(let i=0;i+17<=v.length;i++){const w=v.slice(i,i+17); if(!/[IOQ]/.test(w)) cands.push(w);}
+  const good=cands.find(checkDigitOK);
+  if(good) return {vin:good,ok:true};
+  if(cands.length) return {vin:cands[0],ok:false};   // no check-digit match (e.g. non-US VIN): best guess, flagged
+  return {vin:'',ok:false};
+}
+let scanTimer=null;
+function processScan(){
+  clearTimeout(scanTimer);
+  const raw=vinEl.value; if(!raw.trim()) return;
+  const r=extractVin(raw);
+  if(r.vin){
+    vinEl.value=r.vin;
+    if(r.vin!==lastVin) lookup(r.vin);
+    if(!r.ok) st.textContent+=' | WARNING: VIN check digit does not match - verify the VIN.';
+  } else if(raw.replace(/[^A-Za-z0-9]/g,'').length>=17) st.textContent='No valid 17-character VIN found in scan. Rescan or type it.';
+  else st.textContent='VIN must be 17 characters.';
+}
+// a scan arrives as fast keystrokes: wait for a short pause (or Enter), then clean it up
+vinEl.addEventListener('input',()=>{
+  clearTimeout(scanTimer);
+  if(vinEl.value.replace(/[^A-Za-z0-9]/g,'').length>=17) scanTimer=setTimeout(processScan,250);
+});
+vinEl.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key==='Tab'&&vinEl.value.length>=17){ if(e.key==='Enter')e.preventDefault(); processScan(); } });
+
+async function lookup(vin){
+  lastVin=vin; st.textContent='Decoding VIN...';
+  // 1) vehicle info from NHTSA (free)
+  try{
+    const r=await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/'+vin+'?format=json');
+    const j=await r.json(), v=j.Results&&j.Results[0]||{};
+    $('#raw').textContent=['ModelYear','Make','Model','Trim','Series','DisplacementL','DisplacementCC','EngineCylinders','EngineConfiguration','EngineModel','EngineManufacturer','FuelTypePrimary','ErrorCode','ErrorText'].map(k=>k+': '+(v[k]||'')).join('\n');
+    if(v.Make){
+      form.year.value=v.ModelYear||''; form.make.value=cap(v.Make); form.model.value=v.Model||'';
+      const L=parseFloat(v.DisplacementL);
+      form.cid.value=isNaN(L)?'':Math.round(L*61.024);
+      form.cyl.value=v.EngineCylinders||'';
+      form.engineDesc.value=[isNaN(L)?'':L.toFixed(1)+'L',v.EngineConfiguration||'',v.FuelTypePrimary||'',v.EngineModel||''].filter(Boolean).join(' ');
+      let engSrc='from NHTSA';
+      const ov=JSON.parse(localStorage.getItem('engOverride')||'{}')[engKey(vin)];
+      if(ov){ form.cid.value=ov.cid; form.cyl.value=ov.cyl; form.engineDesc.value=ov.engineDesc; engSrc='from your saved correction'; }
+      st.textContent='Vehicle decoded: '+[v.ModelYear,cap(v.Make),v.Model].join(' ')+' | Engine '+engSrc+(ov?'':' (verify cylinders)')+(v.ErrorCode&&v.ErrorCode!=='0'?'  (check digit/partial: '+(v.ErrorText||'')+')':'');
+    } else st.textContent='VIN not recognized - enter vehicle manually.';
+  }catch(e){ st.textContent='Offline: could not decode VIN. Enter vehicle manually.'; }
+  // 2) owner: prior visits first, then optional lookup service
+  const prev=all().filter(r=>r.data.vin===vin).sort((a,b)=>b.savedAt.localeCompare(a.savedAt))[0];
+  if(prev && !form.name.value){
+    ['name','address','city','state','zip','homeTel','workTel','plate'].forEach(k=>form[k].value=prev.data[k]||'');
+    st.textContent+=' | Owner loaded from previous visit.';
+  } else {
+    const url=localStorage.getItem('ownerUrl');
+    if(url && !form.name.value){
+      try{
+        const r=await fetch(url+(url.includes('?')?'&':'?')+'vin='+vin); const o=await r.json();
+        ['name','address','city','state','zip','homeTel','workTel'].forEach(k=>{if(o[k])form[k].value=o[k];});
+        st.textContent+=' | Owner loaded from lookup service.';
+      }catch(e){ st.textContent+=' | Owner lookup failed - enter manually.'; }
+    } else if(!form.name.value) st.textContent+=' | New customer - enter owner info.';
+  }
+  form.miles.focus();
+}
+const engKey=v=>v.slice(0,8)+v[9];
+// save an engine correction immediately when edited (no need to save the whole form)
+['cid','cyl','engineDesc'].forEach(n=>form[n].addEventListener('change',()=>{
+  const vin=form.vin.value; if(vin.length!==17) return;
+  const o=JSON.parse(localStorage.getItem('engOverride')||'{}');
+  o[engKey(vin)]={cid:form.cid.value,cyl:form.cyl.value,engineDesc:form.engineDesc.value};
+  localStorage.setItem('engOverride',JSON.stringify(o));
+  st.textContent+=' | Engine correction remembered.';
+}));
+const US_STATES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'District of Columbia',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
+form.state.innerHTML='<option value=""></option>'+Object.entries(US_STATES).map(([c,n])=>`<option value="${c}">${c} - ${n}</option>`).join('');
+const OH_CITIES=['Cleveland','Bedford','Bedford Heights','Maple Heights','Warrensville Heights','Solon','Garfield Heights','Shaker Heights','Cleveland Heights','Euclid','Parma','Lakewood','Akron','Twinsburg','Macedonia','Northfield','Walton Hills','Oakwood Village','Cuyahoga Heights','Independence','Brecksville','Broadview Heights','Strongsville','Mayfield Heights','Highland Heights','Beachwood','Orange','Pepper Pike','Chagrin Falls','Aurora','Streetsboro','Hudson','Stow','Kent','Canton','Youngstown','Mentor','Willoughby','Painesville','Columbus','Cincinnati','Toledo','Dayton'];
+// city suggestions: cities you've used before + common Northeast Ohio cities (ZIP entry gives the exact city)
+function updateCities(){
+  const stt=form.state.value, set=new Set();
+  all().forEach(r=>{const d=r.data; if(d.city && (!stt||!d.state||d.state===stt)) set.add(d.city);});
+  if(!stt||stt==='OH') OH_CITIES.forEach(c=>set.add(c));
+  $('#cities').innerHTML=[...set].sort().map(c=>`<option value="${esc(c)}">`).join('');
+}
+form.state.addEventListener('change',updateCities);
+// typing a 5-digit ZIP fills city + state (free zippopotam.us lookup)
+form.zip.addEventListener('input',async()=>{
+  const z=form.zip.value.replace(/\D/g,'').slice(0,5); form.zip.value=z;
+  if(z.length!==5) return;
+  try{
+    const r=await fetch('https://api.zippopotam.us/us/'+z); if(!r.ok) return;
+    const j=await r.json(), pl=j.places&&j.places[0]; if(!pl) return;
+    form.city.value=pl['place name']; form.state.value=pl['state abbreviation']; updateCities();
+  }catch(e){}
+});
+const cap=s=>String(s).toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+
+// ---- signature pad
+const sig=$('#sig'), ctx=sig.getContext('2d'); let drawing=false, sigBlank=true;
+function sizeSig(){const d=sig.toDataURL(); sig.width=sig.clientWidth; sig.height=90; ctx.lineWidth=2;ctx.lineCap='round'; if(!sigBlank){const i=new Image();i.onload=()=>ctx.drawImage(i,0,0);i.src=d;}}
+window.addEventListener('resize',sizeSig); sizeSig();
+const pos=e=>{const r=sig.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+sig.addEventListener('pointerdown',e=>{drawing=true;sigBlank=false;ctx.beginPath();ctx.moveTo(...pos(e));sig.setPointerCapture(e.pointerId)});
+sig.addEventListener('pointermove',e=>{if(drawing){ctx.lineTo(...pos(e));ctx.stroke();}});
+sig.addEventListener('pointerup',()=>drawing=false);
+function clearSig(){ctx.clearRect(0,0,sig.width,sig.height);sigBlank=true;}
+function loadSig(url){const i=new Image();i.onload=()=>{ctx.drawImage(i,0,0,sig.width,sig.height);sigBlank=false;};i.src=url;}
+$('#sigClear').onclick=clearSig;
+
+newForm();
+</script>
+</body>
+</html>
